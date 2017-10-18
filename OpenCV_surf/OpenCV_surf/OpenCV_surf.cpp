@@ -34,12 +34,15 @@ using namespace std;
 #define WINDOW_NAME2 "【图2】"        //为窗口标题定义的宏   
 #define WINDOW_NAME3 "【直接配准后的图】"        //为窗口标题定义的宏   
 #define WINDOW_NAME4 "【平移修正配准后的图】"        //为窗口标题定义的宏   
+double g_nangle;
+double g_nscale;
 
 
 //-----------------------------------【全局函数声明部分】--------------------------------------  
 //      描述：全局函数的声明  
 //-----------------------------------------------------------------------------------------------  
 static void ShowHelpText();//输出帮助文字  
+void on_Rotation(int, void *);//回调函数 
 
 
 //-----------------------------------【main( )函数】--------------------------------------------  
@@ -55,7 +58,11 @@ int main()
 
 	//【1】载入素材图  
 	Mat srcImage1 = imread("D://1.jpg", 1);
-	Mat srcImage2 = imread("D://2.jpg", 1);
+	//Mat srcImage2 = imread("D://2.jpg", 1);
+	Mat srcImage2;
+	//创建轨迹条  
+	createTrackbar("旋转角度", "WINDOW_NAME1", &g_nangle, 1, on_Rotation);
+
 	imshow(WINDOW_NAME1, srcImage1);
 	imshow(WINDOW_NAME2, srcImage2);
 	Mat dstImage1;
@@ -180,4 +187,8 @@ static void ShowHelpText()
 	printf("\t当前使用的OpenCV版本为 OpenCV CV_VERSION\n\n");
 	//printf("\t请从键盘输入SURF算法中的hessian阈值：\n\n");
 	printf("\t按任意键退出\n\n\n\n\t\t\t\t\t\t\t\t by晨光\n\n\n");
+}
+void on_Rotation(int, void *)
+{
+	Mat getRotationMatrix2D(Point2fcenter, g_nangle, g_nscale);
 }
