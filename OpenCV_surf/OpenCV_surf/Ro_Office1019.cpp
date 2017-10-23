@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include"SSIM.h"
 
 
 //-----------------------------------【头文件包含部分】---------------------------------------  
@@ -21,6 +22,7 @@
 #include "opencv.hpp"  
 #include "opencv2/nonfree/features2d.hpp"
 #include <Windows.h>
+#include"stdio.h"
 
 
 //-----------------------------------【命名空间声明部分】--------------------------------------  
@@ -41,8 +43,9 @@ using namespace std;
 //      描述：全局函数的声明  
 //-----------------------------------------------------------------------------------------------  
 static void ShowHelpText();//输出帮助文字 
-void on_Rotation(int,int,int, void *);//回调函数  
+void on_Rotation(int, void *);//回调函数  
 void PSNR_count(Mat, Mat);
+double Ssim(IplImage* src, IplImage* key);
 //void on_Rotation_scale(int, void *);//回调函数 不是每一个bar要一个回调函数，参考改变亮度对比的
 void onMouse(int event, int x, int y, int flags, void* param);
 Mat srcImage2, dstImage2,dstImage_warp;
@@ -120,9 +123,9 @@ int main()
 	createTrackbar("尺寸", WINDOW_NAME2, &g_n_Rotation_scale, 13, on_Rotation);
 	createTrackbar("H阈值", WINDOW_NAME2, &g_nminHessian, 999, on_Rotation);//两个bar调用同一个函数
 	//调用回调函数
-	on_Rotation(g_n_Rotation_angle, g_n_Rotation_scale, g_nminHessian, 0);
-	//on_Rotation(g_n_Rotation_scale, 0);
-	//on_Rotation(g_nminHessian, 0);
+	on_Rotation(g_n_Rotation_angle, 0);
+	on_Rotation(g_n_Rotation_scale, 0);
+	on_Rotation(g_nminHessian, 0);
 	
 
 	//【2】使用SURF算子检测关键点  
@@ -251,6 +254,20 @@ void Process()
 	PSNR_count(dstImage_warp, srcImage2);
 	DWORD end_time = GetTickCount();
 	cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
+	//【12】计算两幅图像 dstImage_warp,srcImage2之间的结构相似性
+	IplImage* src;
+	char* strPath1 = "D://1.jpg";  //注意后缀名称是否正确  
+	src = cvLoadImage(strPath1, 1);//初始化指针
+	*src = IplImage(dstImage_warp);
+
+	IplImage* key;
+	
+
+	key = cvLoadImage(strPath1, 1);
+	*key = IplImage(srcImage2);//将数据类型Mat转换为IplImage
+
+	double ssim=Ssim( src, key);
+	cout << "ssim is :" << ssim << endl;
 	printf("\t\t\t\t\n\n\n\n");
 	
 
