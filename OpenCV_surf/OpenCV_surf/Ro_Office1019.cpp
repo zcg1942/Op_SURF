@@ -89,7 +89,7 @@ int main()
 	
 
 	//【0】载入素材图  
-     srcImage1 = imread("D://1.jpg", 1);
+     srcImage1 = imread("D://b.jpg", 1);
 	 imshow(WINDOW_NAME1, srcImage1);
 	 //【0】显示欢迎和帮助文字  
 	 ShowHelpText();
@@ -300,7 +300,7 @@ void PSNR_count(Mat x,Mat y)
 	}
 	MSE = s / ((gray1.rows)*(gray1.cols));
 	PSNR0 = (255 ^ 2 )/ MSE;
-	PSNR_dB = 10 * log10(PSNR0);
+	PSNR_dB = int(10 * log10(PSNR0));
 	cout << "复原前后峰值信噪比是：" << PSNR_dB << "dB"<<endl;
 	
 }
