@@ -255,16 +255,14 @@ void Process()
 	DWORD end_time = GetTickCount();
 	cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
 	//【12】计算两幅图像 dstImage_warp,srcImage2之间的结构相似性
-	IplImage* src;
-	char* strPath1 = "D://1.jpg";  //注意后缀名称是否正确  
-	src = cvLoadImage(strPath1, 1);//初始化指针
-	*src = IplImage(dstImage_warp);
+	IplImage* src=NULL;
+	//char* strPath1 = "D://1.jpg";  //注意后缀名称是否正确  
+	//src = cvLoadImage(strPath1, 1);//初始化指针
+	src = &(IplImage(dstImage_warp));
 
-	IplImage* key;
-	
-
-	key = cvLoadImage(strPath1, 1);
-	*key = IplImage(srcImage2);//将数据类型Mat转换为IplImage
+	IplImage* key=NULL;
+	//key = cvLoadImage(strPath1, 1);
+	key = &(IplImage(srcImage2));//将数据类型Mat转换为IplImage
 
 	double ssim=Ssim( src, key);
 	cout << "ssim is :" << ssim << endl;
