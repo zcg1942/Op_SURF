@@ -20,6 +20,7 @@
 #include "iostream"  
 #include "opencv.hpp"  
 #include "opencv2/nonfree/features2d.hpp"
+#include <Windows.h>
 
 
 //-----------------------------------【命名空间声明部分】--------------------------------------  
@@ -39,8 +40,40 @@ using namespace std;
 //-----------------------------------【全局函数声明部分】--------------------------------------  
 //      描述：全局函数的声明  
 //-----------------------------------------------------------------------------------------------  
-static void ShowHelpText();//输出帮助文字  
+static void ShowHelpText();//输出帮助文字 
+void on_Rotation(int,int,int, void *);//回调函数  
+void PSNR_count(Mat, Mat);
+//void on_Rotation_scale(int, void *);//回调函数 不是每一个bar要一个回调函数，参考改变亮度对比的
+void onMouse(int event, int x, int y, int flags, void* param);
+Mat srcImage2, dstImage2,dstImage_warp;
+Mat srcImage1, dstImage1;
+Mat Rotation_matrix;
+Point2f Point2fcenter=float((200.0,150.0));
+int g_n_Rotation_angle = 11;
+int g_n_Rotation_scale=11;
+int g_nminHessian=111;
 
+void onMouse(int event, int x, int y, int flags, void* param)
+{
+	Mat *im = reinterpret_cast<Mat*>(param);
+	switch (event)
+	{
+	case CV_EVENT_LBUTTONDOWN:     //鼠标左键按下响应：返回坐标和灰度  
+		std::cout << "at(" << x << "," << y << ")value is:"
+			<< static_cast<int>(im->at<uchar>(cv::Point(x, y))) << std::endl;
+	// Point2fcenter = Point(x, y);
+		break;
+	//case CV_EVENT_RBUTTONDOWN:    //鼠标右键按下响应：输入坐标并返回该坐标的灰度  
+	//	std::cout << "input(x,y)" << endl;
+	//	std::cout << "x =" << endl;
+	//	cin >> x;
+	//	std::cout << "y =" << endl;
+	//	cin >> y;
+	//	std::cout << "at(" << x << "," << y << ")value is:"
+	//		<< static_cast<int>(im->at<uchar>(cv::Point(x, y))) << std::endl;
+	//	break;
+	}
+}
 
 //-----------------------------------【main( )函数】--------------------------------------------  
 //      描述：控制台应用程序的入口函数，我们的程序从这里开始执行  
@@ -50,14 +83,19 @@ int main()
 	//【0】改变console字体颜色  
 	system("color 3B");
 
-	//【0】显示欢迎和帮助文字  
-	ShowHelpText();
+	
 
-	//【1】载入素材图  
-	Mat srcImage1 = imread("D://1.jpg", 1);
-	Mat srcImage2 = imread("D://2.jpg", 1);
-	imshow(WINDOW_NAME1, srcImage1);
-	imshow(WINDOW_NAME2, srcImage2);
+	//【0】载入素材图  
+     srcImage1 = imread("D://1.jpg", 1);
+	 imshow(WINDOW_NAME1, srcImage1);
+	 //【0】显示欢迎和帮助文字  
+	 ShowHelpText();
+	 srcImage2 = Mat::zeros(srcImage1.rows, srcImage1.cols, srcImage1.type());
+	//Mat srcImage2 = imread("D://2.jpg", 1);
+	
+	//imshow(WINDOW_NAME2, srcImage2);
+	// 设置目标图像的大小和类型与源图像一致  
+	
 	Mat dstImage1;
 	// 设置目标图像的大小和类型与源图像一致  
 	dstImage1 = Mat::zeros(srcImage1.rows, srcImage1.cols, srcImage1.type());
@@ -70,16 +108,71 @@ int main()
 	Mat dstImage4;
 	// 设置目标图像的大小和类型与源图像一致  
 	dstImage4 = Mat::zeros(srcImage1.rows, srcImage1.cols, srcImage1.type());
-	if (!srcImage1.data || !srcImage2.data)
+	if (!srcImage1.data)
 	{
 		printf("读取图片错误，请确定目录下是否有imread函数指定的图片存在~！ \n"); return false;
 	}
 
+	//创建轨迹条 和获取鼠标左键位置 
+	namedWindow(WINDOW_NAME2, 1);
+	cv::setMouseCallback(WINDOW_NAME1, onMouse, reinterpret_cast<void*> (&srcImage1));
+	createTrackbar("角度", WINDOW_NAME2, &g_n_Rotation_angle, 300, on_Rotation);
+	createTrackbar("尺寸", WINDOW_NAME2, &g_n_Rotation_scale, 13, on_Rotation);
+	createTrackbar("H阈值", WINDOW_NAME2, &g_nminHessian, 999, on_Rotation);//两个bar调用同一个函数
+	//调用回调函数
+	on_Rotation(g_n_Rotation_angle, g_n_Rotation_scale, g_nminHessian, 0);
+	//on_Rotation(g_n_Rotation_scale, 0);
+	//on_Rotation(g_nminHessian, 0);
+	
+
 	//【2】使用SURF算子检测关键点  
 	//int minHessian = 700;//SURF算法中的hessian阈值  
-	static int minHessian;
+	/*static int minHessian;
 	cout << "请从键盘输入海塞矩阵阈值";
-	cin >> minHessian;
+	cin >> minHessian;*/
+	
+
+
+	////double adjustValue1 = srcImage1.cols;
+	//double adjustValue1 = 400.0;
+	////double adjustValue2 = srcImage1.rows;
+	//double adjustValue2 = 300.0;
+	//Mat adjustMat = (Mat_<double>(3, 3) << 1.0, 0, adjustValue1, 0, 1.0, adjustValue2, 0, 0, 1.0);
+	//cout << "调整矩阵为：\n" << adjustMat << endl << endl;
+	//cout << "调整后变换矩阵为：\n" << adjustMat*warpMat<< endl;
+	//warpAffine(srcImage1, dstImage4, warpMat, dstImage4.size());
+	//imshow(WINDOW_NAME4, dstImage4);
+
+	waitKey(0);
+	return 0;
+}
+
+//-----------------------------------【ShowHelpText( )函数】----------------------------------    
+//      描述：输出一些帮助信息    
+//----------------------------------------------------------------------------------------------    
+static void ShowHelpText()
+{
+	//输出一些帮助信息    
+	printf("\n\n\n\t欢迎来到【SURF特征描述】示例程序~\n\n");
+	printf("\t当前使用的OpenCV版本为 OpenCV CV_VERSION\n\n");
+	//printf("\t请从键盘输入SURF算法中的hessian阈值：\n\n");
+	printf("\t按任意键退出\n\n\n\n\t\t\t\t\t\t\t\t by晨光\n\n\n");
+}
+//-----------------------------【Process( )函数】------------------------------------  
+//            描述：进行自定义的旋转、配准操作  
+//-----------------------------------------------------------------------------------------  
+void Process()
+{//根据trackbar的值计算旋转矩阵
+	DWORD start_time = GetTickCount();
+	double angle = (double)(g_n_Rotation_angle / 10);
+	double scale = (double)(g_n_Rotation_scale / 10);
+	int minHessian = g_nminHessian;
+	Rotation_matrix = getRotationMatrix2D(Point2fcenter, angle, scale);
+	cout << "旋转矩阵为：" << Rotation_matrix;
+	warpAffine(srcImage1, srcImage2, Rotation_matrix, srcImage2.size());
+	//显示效果图 
+	imshow(WINDOW_NAME2, srcImage2);
+	
 	SurfFeatureDetector detector(minHessian);//定义一个SurfFeatureDetector（SURF） 特征检测类对象    
 	std::vector<KeyPoint> keyPoints1, keyPoints2;//vector模板类，存放任意类型的动态数组  
 
@@ -154,30 +247,43 @@ int main()
 	//【10】对源图像应用刚刚求得的仿射变换  
 	warpAffine(srcImage1, dstImage_warp, warpMat, dstImage_warp.size());
 	imshow(WINDOW_NAME3, dstImage_warp);
+	//【11】计算两幅图像 dstImage_warp,srcImage2之间的峰值信噪比
+	PSNR_count(dstImage_warp, srcImage2);
+	DWORD end_time = GetTickCount();
+	cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
+	printf("\t\t\t\t\n\n\n\n");
+	
 
-
-	////double adjustValue1 = srcImage1.cols;
-	//double adjustValue1 = 400.0;
-	////double adjustValue2 = srcImage1.rows;
-	//double adjustValue2 = 300.0;
-	//Mat adjustMat = (Mat_<double>(3, 3) << 1.0, 0, adjustValue1, 0, 1.0, adjustValue2, 0, 0, 1.0);
-	//cout << "调整矩阵为：\n" << adjustMat << endl << endl;
-	//cout << "调整后变换矩阵为：\n" << adjustMat*warpMat<< endl;
-	//warpAffine(srcImage1, dstImage4, warpMat, dstImage4.size());
-	//imshow(WINDOW_NAME4, dstImage4);
-
-	waitKey(0);
-	return 0;
 }
-
-//-----------------------------------【ShowHelpText( )函数】----------------------------------    
-//      描述：输出一些帮助信息    
-//----------------------------------------------------------------------------------------------    
-static void ShowHelpText()
+//-----------------------------【on_回调( )函数】------------------------------------  
+//            描述：实现旋转，缩放变换回调函数  
+//------------------------------------------------------------------------------------------------
+void on_Rotation(int, void *)//回调函数  
 {
-	//输出一些帮助信息    
-	printf("\n\n\n\t欢迎来到【SURF特征描述】示例程序~\n\n");
-	printf("\t当前使用的OpenCV版本为 OpenCV CV_VERSION\n\n");
-	//printf("\t请从键盘输入SURF算法中的hessian阈值：\n\n");
-	printf("\t按任意键退出\n\n\n\n\t\t\t\t\t\t\t\t by晨光\n\n\n");
+	Process();
+}
+//-----------------------------【计算PSNR函数】------------------------------------  
+//            描述：转换为灰度图之后，对比像素差异
+//--------------------------------------------------------------------------------------
+void PSNR_count(Mat x,Mat y)
+{
+	double MSE,PSNR0;
+	double s = 0;
+	int PSNR_dB;
+	Mat gray1, gray2;
+	
+	cvtColor(x, gray1, CV_BGR2GRAY);
+	cvtColor(y, gray2, CV_BGR2GRAY);
+	for (int i = 0; i < gray1.rows; i++)//不能是小于等于，否则溢出！
+	{
+		for (int j = 0; j < gray1.cols; j++)
+		{
+			s = s + int((gray1.at<uchar>(i, j) - gray2.at<uchar>(i, j)) ^ 2);//注意循环顺序和坐标顺序，先进行行循环，对应y坐标，at时放在前面
+		}
+	}
+	MSE = s / ((gray1.rows)*(gray1.cols));
+	PSNR0 = (255 ^ 2 )/ MSE;
+	PSNR_dB = 10 * log10(PSNR0);
+	cout << "复原前后峰值信噪比是：" << PSNR_dB << "dB"<<endl;
+	
 }
